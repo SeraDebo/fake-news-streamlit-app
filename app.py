@@ -49,22 +49,19 @@ def load_tokenizer():
 tokenizer = load_tokenizer()
 
 # -----------------------------
-# Load TFLite model (DO NOT cache)
+# Load TFLite model (Python 3.13 safe)
 # -----------------------------
 def load_tflite_model():
     interpreter = tf.lite.Interpreter(
-        model_path="fake_news_model.tflite",
-        experimental_preserve_all_tensors=True
+        model_path="fake_news_model.tflite"
     )
     interpreter.allocate_tensors()
     return interpreter
 
-# ✅ Create interpreter BEFORE using it
 interpreter = load_tflite_model()
-
-# ✅ Now safe to read details
 input_details = interpreter.get_input_details()
 output_details = interpreter.get_output_details()
+
 
 # -----------------------------
 # Prediction function
