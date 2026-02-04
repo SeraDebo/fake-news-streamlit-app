@@ -47,11 +47,13 @@ tokenizer = load_tokenizer()
 # -----------------------------
 @st.cache_resource
 def load_tflite_model():
-    interpreter = tf.lite.Interpreter(model_path="fake_news_model.tflite")
+    interpreter = tf.lite.Interpreter(
+        model_path="fake_news_model.tflite",
+        experimental_preserve_all_tensors=True
+    )
     interpreter.allocate_tensors()
     return interpreter
 
-interpreter = load_tflite_model()
 
 input_details = interpreter.get_input_details()
 output_details = interpreter.get_output_details()
