@@ -1,8 +1,14 @@
+import os
 import streamlit as st
 import numpy as np
 import tensorflow as tf
 import pickle
 import re
+
+# -----------------------------
+# Silence TensorFlow logs
+# -----------------------------
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 # -----------------------------
 # Page config
@@ -33,7 +39,7 @@ def clean_text(text):
     return text
 
 # -----------------------------
-# Load tokenizer
+# Load tokenizer (SAFE to cache)
 # -----------------------------
 @st.cache_resource
 def load_tokenizer():
@@ -43,9 +49,8 @@ def load_tokenizer():
 tokenizer = load_tokenizer()
 
 # -----------------------------
-# Load TFLite model
+# Load TFLite model (DO NOT cache)
 # -----------------------------
-@st.cache_resource
 def load_tflite_model():
     interpreter = tf.lite.Interpreter(
         model_path="fake_news_model.tflite",
@@ -54,7 +59,10 @@ def load_tflite_model():
     interpreter.allocate_tensors()
     return interpreter
 
+# ✅ Create interpreter BEFORE using it
+interpreter = load_tflite_model()
 
+# ✅ Now safe to read details
 input_details = interpreter.get_input_details()
 output_details = interpreter.get_output_details()
 
@@ -63,15 +71,22 @@ output_details = interpreter.get_output_details()
 # -----------------------------
 def predict_news(text):
     text = clean_text(text)
+
     seq = tokenizer.texts_to_sequences([text])
     padded = tf.keras.preprocessing.sequence.pad_sequences(
         seq, maxlen=MAX_LEN, padding="post"
     )
 
-    interpreter.set_tensor(input_details[0]['index'], padded.astype(np.int32))
+    interpreter.set_tensor(
+        input_details[0]["index"],
+        padded.astype(np.int32)
+    )
     interpreter.invoke()
 
-    prediction = interpreter.get_tensor(output_details[0]['index'])[0][0]
+    prediction = interpreter.get_tensor(
+        output_details[0]["index"]
+    )[0][0]
+
     return prediction
 
 # -----------------------------
@@ -93,7 +108,7 @@ if st.button("🔍 Analyze News"):
         if score > 0.5:
             st.error(f"🚨 FAKE NEWS\n\nConfidence: {score:.2f}")
         else:
-            st.success(f"✅ REAL NEWS\n\nConfidence: {1-score:.2f}")
+            st.success(f"✅ REAL NEWS\n\nConfidence: {1 - score:.2f}")
 
 # -----------------------------
 # Footer
